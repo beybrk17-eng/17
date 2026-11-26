@@ -31,7 +31,12 @@ function serve() {
   await page.goto(url);
   await page.waitForFunction(() => window.ready === true, null, { timeout: 120000 });
   const el = await page.$('#wrap');
-  if (mode === 'stills') {
+  if (mode === 'cover') {
+    const [kind, part, title] = rest;
+    await page.evaluate(([k, p, t]) => window.renderCover(k, Number(p || 1), t || 'UÇAK'), [kind, part, title]);
+    await el.screenshot({ path: path.join(out, `${kind}${part ? '_' + part : ''}.png`) });
+    console.log('cover', kind);
+  } else if (mode === 'stills') {
     for (const t of rest.map(Number)) {
       await page.evaluate((t) => window.renderAt(t), t);
       await el.screenshot({ path: path.join(out, `t${t.toFixed(2).padStart(6, '0')}.png`) });

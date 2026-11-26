@@ -433,6 +433,72 @@ function autoHide() {
   }
 }
 
+
+/* ---------- COVER & LOGO ---------- */
+function coverTitle(part, title) {
+  const cx = W / 2;
+  // dark gradient band for legibility
+  const g = ctx.createLinearGradient(0, H * 0.5, 0, H);
+  g.addColorStop(0, 'rgba(3,6,12,0)'); g.addColorStop(0.45, 'rgba(3,6,12,0.55)'); g.addColorStop(1, 'rgba(3,6,12,0.85)');
+  ctx.fillStyle = g; ctx.fillRect(0, H * 0.5, W, H * 0.5);
+  // icon + title
+  ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = '900 64px ID';
+  const tw = ctx.measureText(title).width; const iw = 70, gap = 16; const x0 = cx - (tw + iw + gap) / 2, y = 812;
+  ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 18;
+  UI2.planeGlyph(ctx, x0 + iw / 2, y + 2, -Math.PI / 2 + 0.35, 1.45, '#ffffff');
+  ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 18;
+  ctx.fillStyle = '#ffffff'; ctx.fillText(title, x0 + iw + gap, y + 4);
+  ctx.restore();
+  // accent bar
+  ctx.fillStyle = '#ff6a12'; UI.rr(ctx, cx - 240, 862, 480, 9, 4); ctx.fill();
+  // BÖLÜM N
+  ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = '900 150px ID'; const w1 = ctx.measureText('BÖLÜM').width;
+  ctx.font = '900 190px ID'; const w2 = ctx.measureText(String(part)).width;
+  const gx = cx - (w1 + 18 + w2) / 2, by = 1030;
+  ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 6;
+  ctx.font = '900 150px ID';
+  const lg = ctx.createLinearGradient(0, by - 120, 0, by);
+  lg.addColorStop(0, '#fff6e6'); lg.addColorStop(1, '#f2d2a2');
+  ctx.fillStyle = lg; ctx.fillText('BÖLÜM', gx, by);
+  ctx.font = '900 190px ID';
+  const ng = ctx.createLinearGradient(0, by - 160, 0, by);
+  ng.addColorStop(0, '#ffb020'); ng.addColorStop(1, '#ff3b1e');
+  ctx.fillStyle = ng; ctx.fillText(String(part), gx + w1 + 18, by + 8);
+  ctx.restore();
+  // small tagline
+  ctx.save(); ctx.textAlign = 'center'; ctx.font = '800 26px IB'; ctx.letterSpacing = '4px'; ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 10;
+  ctx.fillText('SEN OLSAN NE YAPARDIN?', cx, 1110); ctx.restore();
+}
+function renderCover(kind, part, title) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, RW, RH); ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  if (kind === 'cover') {
+    // reuse the choice-state of the cabin, closer over-the-shoulder hero
+    const s = SHOTS[SHOTS.length - 1]; s[3](6, 0.5, 76.42);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, RW, RH); ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+    CAB.hero.head.rotation.set(0, 0.42, 0);
+    CAB.lights.red.intensity = 0.6; CAB.stripM.color.setRGB(1.6, 1.75, 2.0); CAB.lights.pl1.intensity = 1.6; CAB.doorL.intensity = 2.2;
+    const hp = CAB.hero.g.position;
+    for (let k = -4; k < 5; k++) for (const x of [-0.51, 0.51]) hideNear(V(x, 0.36, HP().z + k * ROW), 0.35);
+    place(V(hp.x + 0.8, 1.95, hp.z + 1.9), V(hp.x + 0.8, 1.95, hp.z + 1.9), V(hp.x - 0.05, 1.42, hp.z - 4.0), null, 0, 48);
+    cam.near = 0.03; cam.far = 80; cam.updateProjectionMatrix();
+    POST.render(CAB.scene, cam, 1, { dof: { focus: 1.4, aperture: 0.006, maxblur: 0.008 }, bloom: 0.45, threshold: 1.1, vignette: 0.6, grain: 0.03 });
+    coverTitle(part, title);
+  } else if (kind === 'logo') {
+    const s = SHOTS[5]; s[3](0.5, 0.2, 14.6);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, RW, RH); ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+    CAB.hero.head.rotation.set(-0.02, 0.18, 0);
+    const h = heroHead();
+    for (let k = 1; k < 4; k++) for (const x of [-1.55, -1.03, -0.51]) hideNear(V(x, 0.36, HP().z - k * ROW), 0.3);
+    CAB.panel.visible = false;
+    place(V(h.x + 0.3, 1.72, h.z - 1.55), V(h.x + 0.3, 1.72, h.z - 1.55), h.clone().add(V(0.04, -0.04, 0)), null, 0, 40);
+    cam.near = 0.03; cam.far = 80; cam.updateProjectionMatrix();
+    POST.render(CAB.scene, cam, 1, { dof: { focus: 1.5, aperture: 0.012, maxblur: 0.014 }, bloom: 0.4, threshold: 1.1, vignette: 0.35, grain: 0.0 });
+  }
+}
+
 async function init() {
   await document.fonts.load('900 40px IK'); await document.fonts.load('900 40px ID'); await document.fonts.load('700 20px IB');
   EXT = buildExterior(); CAB = buildCabin(); CKP = buildCockpit(); ROOM = buildRoom();
@@ -447,6 +513,7 @@ async function init() {
   // warm-up compile
   for (const sc of [EXT.scene, CAB.scene, CKP.scene, ROOM.scene]) renderer.compile(sc, cam);
   window.renderAt = (T) => { renderAt(T); return true; };
+  window.renderCover = (kind, part = 1, title = 'UÇAK') => { renderCover(kind, part, title); return true; };
   window.DURATION = DURATION;
   window.ready = true;
 }
