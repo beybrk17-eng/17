@@ -110,6 +110,62 @@ for k in np.arange(70.42, DUR - 0.2, 1.0):
 for k in np.arange(84.3, DUR - 0.5, 0.94):
     add(boom(0.9, 70, 40, 0.1), k, 0.22)
 
+
+# --- 12. transition whooshes on major cuts ---
+for at in [2.42, 21.05, 28.98, 31.62, 46.15, 48.82, 56.3, 65.98, 70.42]:
+    add(whoosh(0.9, 300, 5000, 0.75), at - 0.68, 0.16, 0.3 if int(at) % 2 else -0.3)
+
+# --- 13. cabin crowd murmur (panic) ---
+def babble(d):
+    n = int(d * SR); x = np.zeros(n)
+    for k in range(10):
+        v = band(rng.standard_normal(n), 250, 1800)
+        am = band(rng.standard_normal(n), None, 6); am = np.clip(am / (np.abs(am).max() + 1e-9), 0, 1)
+        x += v / (np.abs(v).max() + 1e-9) * am
+    return x / np.abs(x).max()
+mur = babble(20.0)
+mur *= np.interp(np.arange(len(mur)) / SR, [0, 1.5, 17, 20], [0, 1, 0.8, 0])
+add(mur, 43.45, 0.06)
+
+# --- 14. gasp of the cabin when the missiles are named / door opens ---
+add(whoosh(0.7, 500, 3500, 0.3), 26.4, 0.08); add(whoosh(0.7, 500, 3500, 0.3), 54.5, 0.07)
+
+# --- 15. door slide (mechanical) ---
+n = int(0.6 * SR); tt = np.arange(n) / SR
+slide = band(rng.standard_normal(n), 150, 1200) * np.sin(np.pi * tt / 0.6) ** 2
+add(slide / np.abs(slide).max(), 54.47, 0.12)
+clunk = boom(0.4, 120, 60, 0.4); add(clunk, 55.0, 0.15)
+
+# --- 16. paper press on glass ---
+n = int(0.35 * SR); tt = np.arange(n) / SR
+pr = band(rng.standard_normal(n), 1500, 8000) * np.exp(-tt * 10)
+add(pr / np.abs(pr).max(), 36.1, 0.1, -0.4)
+
+# --- 17. radar pings & fuel alarm ---
+def ping(f=1500, d=0.4):
+    n = int(d * SR); tt = np.arange(n) / SR
+    return np.sin(2 * np.pi * f * tt) * np.exp(-tt * 9)
+for k in np.arange(46.25, 48.8, 0.65): add(ping(), k, 0.12)
+for k in np.arange(48.85, 50.3, 0.34): add(beep(960, 0.16), k, 0.07)
+
+# --- 18. plane bank: structural creak + engine surge ---
+n = int(1.8 * SR); tt = np.arange(n) / SR
+creak = np.sin(2 * np.pi * (90 + 30 * np.sin(tt * 3)) * tt) * np.sin(np.pi * tt / 1.8) ** 2
+add(creak, 27.15, 0.1)
+add(whoosh(2.0, 80, 900, 0.5), 27.1, 0.2)
+
+# --- 19. heartbeat under the hero's decision ---
+for k in np.arange(63.3, 70.3, 0.78):
+    add(boom(0.25, 70, 45, 0.0), k, 0.22); add(boom(0.2, 60, 40, 0.0), k + 0.22, 0.14)
+
+# --- 20. jet afterburner roar on peel-away ---
+n = int(2.4 * SR); tt = np.arange(n) / SR
+roar = band(rng.standard_normal(n), 40, 700) * np.exp(-((tt - 0.6) ** 2) / 0.5)
+add(roar / np.abs(roar).max(), 41.15, 0.3, -0.5)
+
+# --- 21. seatbelt sign click before chime ---
+add(tick(3000), 11.38, 0.25)
+
 peak = np.abs(mix).max()
 mix = mix / peak * 0.7 if peak > 0.7 else mix
 pcm = (np.clip(mix, -1, 1) * 32767).astype('<i2')
