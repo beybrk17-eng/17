@@ -12,7 +12,7 @@ const GradeShader = {
   uniforms: {
     tDiffuse: { value: null }, time: { value: 0 },
     contrast: { value: 1.08 }, saturation: { value: 1.0 }, exposure: { value: 1.0 },
-    shadowTint: { value: new THREE.Color(0.0, 0.035, 0.06) }, highTint: { value: new THREE.Color(0.04, 0.02, -0.02) },
+    shadowTint: { value: new THREE.Color(0.0, 0.035, 0.06) }, highTint: { value: new THREE.Color(0.012, 0.012, 0.012) },
     vignette: { value: 0.55 }, ca: { value: 0.0018 }, grain: { value: 0.045 }, lift: { value: 0.012 },
     flash: { value: 0 }, tint: { value: new THREE.Vector4(1, 0.1, 0.1, 0) },
   },

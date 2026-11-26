@@ -71,9 +71,9 @@ function resetCab(T) {
   C.hero.head.rotation.set(0.05, 0, 0); C.hero.setEyeMode('open'); setEyes(C.hero, 1, 1);
   C.hero.browL.rotation.z = 0; C.hero.browR.rotation.z = 0; C.hero.browL.position.y = 0.105; C.hero.browR.position.y = 0.105;
   C.hero.mouth.scale.set(0.022, 0.008, 0.012);
-  C.hero.body.rotation.set(0, 0, 0);
+  C.hero.body.rotation.set(0, 0, 0); C.hero.g.visible = true;
   C.girl.head.rotation.set(0.1, -0.5, 0.25); C.girl.setEyeMode('closed'); C.girl.armL.rotation.set(-0.55, 0, -0.08); C.girl.armR.rotation.set(-0.55, 0, 0.08);
-  C.girl.mouth.scale.set(0.022, 0.008, 0.012);
+  C.girl.mouth.scale.set(0.022, 0.008, 0.012); C.girl.g.visible = true;
   C.passengers.forEach((f, i) => { f.setEyeMode('closed'); f.head.rotation.set(passengerSleep[i].x, passengerSleep[i].y, passengerSleep[i].z); f.g.visible = true; });
   C.steward.g.visible = false; C.steward.g.rotation.set(0, 0, 0); setPose(C.steward, 'stand');
   C.door.position.x = 0; C.doorL.intensity = 0;
@@ -141,9 +141,11 @@ const SHOTS = [
   [11.38, 14.05, 'cab', (lt, p, T) => {
     resetCab(T);
     hideNear(V(-1.55, 0.36, HP().z + ROW), 0.3); hideNear(V(-1.03, 0.36, HP().z + ROW), 0.3);
+    CAB.hero.g.visible = false; CAB.girl.g.visible = false;
     const pz = CAB.panel.position;
-    place(V(pz.x + 0.75, pz.y - 0.55, pz.z + 0.25), V(pz.x + 0.55, pz.y - 0.42, pz.z + 0.2), V(pz.x, pz.y - 0.03, pz.z + 0.05), null, ease(p), 34);
-    return { post: { vignette: 0.85 } };
+    const sbOn = T >= 11.42 ? 1 : 0;
+    place(V(pz.x + 0.42, pz.y - 0.62, pz.z + 0.12), V(pz.x + 0.3, pz.y - 0.5, pz.z + 0.1), V(pz.x, pz.y - 0.03, pz.z + 0.08), null, ease(p), 30);
+    return { grade: { bloom: 0.9, threshold: 0.9, flash: sbOn ? clamp(0.25 - (T - 11.42) * 1.2, 0, 0.25) : 0, vignette: 0.6 } };
   }],
   // 5 hero reacts: "hava sahası kapatıldı"
   [14.05, 16.9, 'cab', (lt, p, T) => {
@@ -215,19 +217,19 @@ const SHOTS = [
     const raise = easeOut((T - 36.05) / 0.7);
     J.paper.visible = raise > 0.01;
     J.arm.rotation.z = lerp(-0.6, 0.9, raise);
-    J.paper.position.y = lerp(0.3, 1.05, raise); J.paper.rotation.z = lerp(0.5, 0.04, raise);
-    const c = J.g.position.clone().add(V(0, 0.95, 3.0));
+    J.paper.position.y = lerp(0.45, 0.95, raise); J.paper.rotation.z = lerp(0.5, 0.04, raise);
+    const c = J.g.position.clone().add(V(0, 0.85, 3.0));
     place(V(-2.0, PLANE_Y + 0.8, 4.0), V(-2.0, PLANE_Y + 0.8, 4.0), c, null, p, lerp(9, 7.5, p), shake(T, 0.02, 3));
   }],
   // 14 paper close-up: KIYIYA GİTMEYİN
   [37.82, 41.15, 'ext', (lt, p, T) => {
     resetExt(T);
     const J = EXT.jet; J.g.visible = true; J.g.position.set(-30, PLANE_Y + 2.5 + Math.sin(T * 1.3) * 0.25, 4);
-    J.pilot.rotation.y = 1.35; J.arm.rotation.z = 0.9; J.paper.visible = true; J.paper.position.y = 1.05; J.paper.rotation.z = 0.04 + Math.sin(T * 2) * 0.02;
+    J.pilot.rotation.y = 1.35; J.arm.rotation.z = 0.9; J.paper.visible = true; J.paper.position.y = 0.95; J.paper.rotation.z = 0.04 + Math.sin(T * 2) * 0.02;
     J.g.updateMatrixWorld(true);
     const pp = new THREE.Vector3(); J.paper.getWorldPosition(pp);
     const punch = T > 39.75 ? easeOut((T - 39.75) / 0.4) : 0;
-    place(V(-2.0, PLANE_Y + 0.8, 4.0), V(-2.0, PLANE_Y + 0.8, 4.0), pp, null, p, lerp(lerp(6.0, 5.2, p), 4.6, punch), shake(T, 0.012, 3));
+    place(V(-2.0, PLANE_Y + 0.8, 4.0), V(-2.0, PLANE_Y + 0.8, 4.0), pp, null, p, lerp(lerp(4.5, 3.9, p), 3.4, punch), shake(T, 0.012, 3));
     return { post: { vignette: 0.85 } };
   }],
   // 15 jet peels away into darkness
@@ -283,7 +285,7 @@ const SHOTS = [
   // 22 cockpit: co-pilot passed out, captain alone
   [56.3, 60.3, 'ckp', (lt, p, T) => {
     const C = CKP; C.sea.t.value = T;
-    const w = Math.floor(T * 3) % 2; C.warn.forEach(m => m.visible = !!w); C.red.intensity = 0.5 + w * 1.3;
+    const w = Math.floor(T * 3) % 2; C.warn.forEach(m => m.visible = !!w); C.red.intensity = 0.25 + w * 0.6;
     C.screens.forEach((tex, i) => { drawPFD(tex.userData.ctx, 256, 256, i % 2, T); tex.needsUpdate = true; });
     C.captain.armL.rotation.set(-1.25 + Math.sin(T * 9) * 0.03, 0, 0.1); C.captain.armR.rotation.set(-1.25 + Math.sin(T * 9 + 1) * 0.03, 0, -0.1);
     C.captain.head.rotation.set(0, Math.sin(T * 0.8) * 0.15, 0);
@@ -344,7 +346,7 @@ const SHOTS = [
   }],
   // 28 CHOICE
   [70.42, DURATION, 'cab', (lt, p, T) => {
-    resetCab(T); wake(1, T); alarm(T, 0.75); doorOpen(1);
+    resetCab(T); wake(1, T); alarm(T, 0.3); doorOpen(0.55);
     const h = CAB.hero; setPose(h, 'stand');
     h.g.position.set(-0.05, 0, HP().z - 0.3); h.g.rotation.y = Math.PI;
     h.head.rotation.set(0, 0.15 * Math.sin(T * 0.6), 0);
@@ -384,7 +386,7 @@ const SHOTS = [
           UI.bigText(ctx, 'YORUMLAR BELİRLEYECEK', 1018, 40, end, '#ffd34d');
         }
       },
-      post: { vignette: 0.8 },
+      post: { vignette: 0.8 }, grade: { bloom: 0.35, threshold: 1.2 },
     };
   }],
 ];
