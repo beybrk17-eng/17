@@ -499,6 +499,126 @@ function renderCover(kind, part, title) {
   }
 }
 
+
+/* ---------- high-impact cover / logo (composited) ---------- */
+let cutR = null;
+function heroCutout(setup, w = 720, h = 1280) {
+  if (!cutR) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    cutR = new THREE.WebGLRenderer({ canvas: c, alpha: true, antialias: true, preserveDrawingBuffer: true });
+    cutR.setPixelRatio(1); cutR.toneMapping = THREE.ACESFilmicToneMapping; cutR.outputColorSpace = THREE.SRGBColorSpace;
+  }
+  cutR.setSize(w, h, false); cutR.setClearColor(0x000000, 0);
+  const sc = new THREE.Scene(); sc.environment = POST.envTex; sc.environmentIntensity = 0.15;
+  const hero = CAB.hero; sc.add(hero.g);
+  const c2 = new THREE.PerspectiveCamera(30, w / h, 0.03, 50);
+  setup(hero, sc, c2);
+  cutR.render(sc, c2);
+  return cutR.domElement;
+}
+function bigTitle(part, title, y0) {
+  const cx = W / 2;
+  ctx.save(); ctx.textBaseline = 'alphabetic';
+  // title chip
+  ctx.font = '900 46px ID'; const tw = ctx.measureText(title).width;
+  const cw = tw + 120, chh = 72, cy = y0;
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 20;
+  ctx.fillStyle = '#ff5a14'; UI.rr(ctx, cx - cw / 2, cy - chh / 2, cw, chh, 14); ctx.fill(); ctx.shadowBlur = 0;
+  UI2.planeGlyph(ctx, cx - cw / 2 + 46, cy, -Math.PI / 2 + 0.35, 1.25, '#ffffff');
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(title, cx - cw / 2 + 86, cy + 3);
+  // BÖLÜM N  (huge, outlined, tilted slightly)
+  ctx.translate(cx, y0 + 175); ctx.rotate(-0.035);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.font = '900 128px ID'; const w1 = ctx.measureText('BÖLÜM ').width;
+  ctx.font = '900 200px ID'; const w2 = ctx.measureText(String(part)).width;
+  const gx = -(w1 + w2) / 2;
+  ctx.lineJoin = 'round';
+  ctx.font = '900 128px ID'; ctx.textAlign = 'left';
+  ctx.lineWidth = 16; ctx.strokeStyle = '#0a0d14'; ctx.strokeText('BÖLÜM', gx, 0);
+  ctx.fillStyle = '#ffffff'; ctx.fillText('BÖLÜM', gx, 0);
+  ctx.font = '900 200px ID';
+  ctx.lineWidth = 18; ctx.strokeText(String(part), gx + w1, 18);
+  const ng = ctx.createLinearGradient(0, -170, 0, 18); ng.addColorStop(0, '#ffd34d'); ng.addColorStop(1, '#ff3b1e');
+  ctx.fillStyle = ng; ctx.fillText(String(part), gx + w1, 18);
+  ctx.restore();
+  // question
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '900 34px IK'; const q = 'ATLAR MIYDIN?'; void q;
+  const qq = 'SEN OLSAN NE YAPARDIN?'; const qw = ctx.measureText(qq).width + 50;
+  ctx.fillStyle = 'rgba(8,10,16,0.82)'; UI.rr(ctx, cx - qw / 2, y0 + 245, qw, 62, 31); ctx.fill();
+  ctx.fillStyle = '#ffd34d'; ctx.fillText(qq, cx, y0 + 278);
+  ctx.restore();
+}
+function renderCover2(kind, part, title) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, RW, RH); ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  if (kind === 'cover2') {
+    // 1) exterior through the window: jet + missiles + burning horizon
+    SHOTS[12][3](2.5, 0.8, 34.1);
+    EXT.missiles.update(34.1 - 18.9 + 2.0, 99); EXT.sky.glow.value = 1.0;
+    place(V(-1.9, PLANE_Y + 0.9, 4.4), V(-1.9, PLANE_Y + 0.9, 4.4), V(-60, PLANE_Y - 3, -4), null, 0, 50);
+    cam.near = 0.3; cam.far = 20000; cam.updateProjectionMatrix();
+    POST.render(EXT.scene, cam, 1, { bloom: 0.9, threshold: 0.9, vignette: 0.3, grain: 0.02, contrast: 1.12, saturation: 1.1 });
+    ctx.drawImage(glc, 0, 0, W, H);
+    // warm danger grade on the outside view
+    ctx.save(); ctx.globalCompositeOperation = 'soft-light'; const og = ctx.createLinearGradient(0, 0, 0, H);
+    og.addColorStop(0, 'rgba(20,40,120,0.5)'); og.addColorStop(0.55, 'rgba(255,90,30,0.55)'); og.addColorStop(1, 'rgba(10,10,30,0.3)');
+    ctx.fillStyle = og; ctx.fillRect(0, 0, W, H); ctx.restore();
+    UI.drawWindowFrame(ctx, 1.18);
+    // 2) hero cut-out, big, from behind looking at the window
+    const img = heroCutout((h, sc, c2) => {
+      setPose(h, 'sit'); h.g.position.set(0, 0, 0); h.g.rotation.set(0, Math.PI, 0); h.g.visible = true;
+      h.head.rotation.set(-0.05, -0.75, 0); h.setEyeMode('open'); setEyes(h, 1.3, 1.4); h.browL.rotation.z = -0.25; h.browR.rotation.z = 0.25; h.browL.position.y = h.browR.position.y = 0.13; h.mouth.scale.set(0.016, 0.026, 0.012);
+      const key = new THREE.DirectionalLight(0xffa060, 2.4); key.position.set(-1, 1.6, -3); sc.add(key);
+      const rim = new THREE.DirectionalLight(0xff6a2a, 3.0); rim.position.set(-2.5, 2.2, 0.5); sc.add(rim);
+      const fill = new THREE.DirectionalLight(0xdfe6ff, 1.3); fill.position.set(3, 1.8, 2); sc.add(fill);
+      sc.add(new THREE.HemisphereLight(0x8aa0ff, 0x101018, 0.35));
+      c2.position.set(1.75, 1.75, 0.9); c2.lookAt(0.0, 1.35, 0.0);
+    });
+    if (window.CUTDBG) { ctx.fillStyle = '#446'; ctx.fillRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H); return; }
+    ctx.drawImage(img, -120, 250, W * 0.7, H * 0.7);
+    // bottom fade for text
+    const bg = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    bg.addColorStop(0, 'rgba(3,5,10,0)'); bg.addColorStop(0.5, 'rgba(3,5,10,0.6)'); bg.addColorStop(1, 'rgba(3,5,10,0.92)');
+    ctx.fillStyle = bg; ctx.fillRect(0, H * 0.55, W, H * 0.45);
+    bigTitle(part, title, 820);
+    UI.post(ctx, 1, { vignette: 0.45, grain: 0.03 });
+  } else {
+    // LOGO: scared hero face on a burning-sky badge
+    const S = W; // draw square in top area 720x720
+    const g = ctx.createRadialGradient(S / 2, S * 0.78, 20, S / 2, S * 0.6, S * 0.75);
+    g.addColorStop(0, '#ffcf5a'); g.addColorStop(0.35, '#ff6a1a'); g.addColorStop(0.75, '#8a1430'); g.addColorStop(1, '#1a0a1e');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+    // missile trails
+    ctx.save(); ctx.lineCap = 'round';
+    const trails = [[120, 0.12], [230, -0.05], [520, 0.08], [610, -0.12], [380, 0.02]];
+    trails.forEach(([x, b], i) => {
+      ctx.strokeStyle = 'rgba(255,240,210,0.55)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, S * 0.72);
+      ctx.quadraticCurveTo(x + b * 300, S * 0.4, x + b * 520, 60 + i * 30); ctx.stroke();
+      const hx = x + b * 520, hy = 60 + i * 30; const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, 26);
+      hg.addColorStop(0, 'rgba(255,255,230,1)'); hg.addColorStop(1, 'rgba(255,180,80,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, 26, 0, 7); ctx.fill();
+    });
+    ctx.restore();
+    // horizon silhouette (sea + plane)
+    ctx.fillStyle = '#12091a'; ctx.fillRect(0, S * 0.72, S, S * 0.28);
+    UI2.planeGlyph(ctx, S * 0.18, S * 0.28, -0.25, 1.6, '#1a0b18');
+    // face
+    const img = heroCutout((h, sc, c2) => {
+      setPose(h, 'sit'); h.g.position.set(0, 0, 0); h.g.rotation.set(0, 0, 0); h.g.visible = true;
+      h.head.rotation.set(-0.08, 0.12, 0.05); h.setEyeMode('open'); setEyes(h, 1.4, 1.5);
+      h.browL.rotation.z = -0.3; h.browR.rotation.z = 0.3; h.browL.position.y = h.browR.position.y = 0.14;
+      h.mouth.scale.set(0.018, 0.03, 0.012);
+      const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(1, 2, 3); sc.add(key);
+      const rim = new THREE.DirectionalLight(0xff7a2a, 4); rim.position.set(-2, 1.5, -1.5); sc.add(rim);
+      const rim2 = new THREE.DirectionalLight(0xffb060, 2.5); rim2.position.set(2, 1, -1.5); sc.add(rim2);
+      sc.add(new THREE.HemisphereLight(0xffd0a0, 0x301020, 0.5));
+      c2.aspect = 1; c2.fov = 30; c2.updateProjectionMatrix();
+      c2.position.set(0.12, 1.42, 2.05); c2.lookAt(0, 1.3, 0);
+    }, 720, 720);
+    ctx.drawImage(img, 0, 40, S, S);
+    UI.post(ctx, 1, { vignette: 0.0, grain: 0.02 });
+  }
+}
+
 async function init() {
   await document.fonts.load('900 40px IK'); await document.fonts.load('900 40px ID'); await document.fonts.load('700 20px IB');
   EXT = buildExterior(); CAB = buildCabin(); CKP = buildCockpit(); ROOM = buildRoom();
@@ -513,7 +633,7 @@ async function init() {
   // warm-up compile
   for (const sc of [EXT.scene, CAB.scene, CKP.scene, ROOM.scene]) renderer.compile(sc, cam);
   window.renderAt = (T) => { renderAt(T); return true; };
-  window.renderCover = (kind, part = 1, title = 'UÇAK') => { renderCover(kind, part, title); return true; };
+  window.renderCover = (kind, part = 1, title = 'UÇAK') => { if (kind === 'cover2' || kind === 'logo2') renderCover2(kind, part, title); else renderCover(kind, part, title); return true; };
   window.DURATION = DURATION;
   window.ready = true;
 }

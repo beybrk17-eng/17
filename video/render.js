@@ -32,7 +32,8 @@ function serve() {
   await page.waitForFunction(() => window.ready === true, null, { timeout: 120000 });
   const el = await page.$('#wrap');
   if (mode === 'cover') {
-    const [kind, part, title] = rest;
+    const [kind, part, title, dbg] = rest;
+    if (dbg) await page.evaluate(() => { window.CUTDBG = true; });
     await page.evaluate(([k, p, t]) => window.renderCover(k, Number(p || 1), t || 'UÇAK'), [kind, part, title]);
     await el.screenshot({ path: path.join(out, `${kind}${part ? '_' + part : ''}.png`) });
     console.log('cover', kind);
