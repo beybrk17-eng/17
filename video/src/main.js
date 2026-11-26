@@ -2,18 +2,21 @@ import * as THREE from 'three';
 import { clamp, lerp, ease, easeOut, easeIn, noise1, setPose, setEyes, rng } from './lib.js';
 import { buildExterior, buildCabin, buildCockpit, buildRoom, drawSeatbelt, drawPFD, drawSimScreen, ROW } from './world.js';
 import * as UI from './ui.js';
+import { makePost } from './post.js';
+import * as UI2 from './ui2.js';
 
 const { W, H } = UI;
 const glc = document.getElementById('gl');
 const uic = document.getElementById('ui');
 const ctx = uic.getContext('2d');
+export const RW = 1080, RH = 1920, SCALE = RW / W;
 const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1); renderer.setSize(W, H, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const cam = new THREE.PerspectiveCamera(45, W / H, 0.05, 20000);
-let EXT, CAB, CKP, ROOM;
+let EXT, CAB, CKP, ROOM, POST, FOCUS = 2;
 
 export const DURATION = 93;
 
@@ -27,7 +30,7 @@ function place(from, to, look1, look2, p, fov = 45, shk = null) {
   cam.position.lerpVectors(from, to, p);
   if (shk) cam.position.add(shk);
   const l = look2 ? look1.clone().lerp(look2, p) : look1;
-  cam.lookAt(l);
+  cam.lookAt(l); FOCUS = cam.position.distanceTo(l);
 }
 function project(v) {
   const p = v.clone().project(cam);
@@ -74,8 +77,8 @@ function resetCab(T) {
   C.passengers.forEach((f, i) => { f.setEyeMode('closed'); f.head.rotation.set(passengerSleep[i].x, passengerSleep[i].y, passengerSleep[i].z); f.g.visible = true; });
   C.steward.g.visible = false; C.steward.g.rotation.set(0, 0, 0); setPose(C.steward, 'stand');
   C.door.position.x = 0; C.doorL.intensity = 0;
-  C.lights.red.intensity = 0; C.lights.pl1.intensity = 6; C.lights.pl2.intensity = 4; C.lights.hemi.intensity = 1.4; C.lights.winL.intensity = 0;
-  C.stripM.color.setRGB(0.81, 0.88, 1.0);
+  C.lights.red.intensity = 0; C.lights.pl1.intensity = 2.2; C.lights.pl2.intensity = 2.0; C.lights.hemi.intensity = 0.55; C.lights.winL.intensity = 0; C.lights.read.intensity = 2.2;
+  C.stripM.color.setRGB(1.6, 1.75, 2.0);
   setSeatbelt(T >= 11.42 ? 1 : 0);
   C.scene.fog.near = 6; C.scene.fog.far = 19;
 }
@@ -94,14 +97,15 @@ function setSeatbelt(on) {
 }
 function alarm(T, k = 1) {
   const f = (Math.sin(T * 7) * 0.5 + 0.5);
-  CAB.lights.red.intensity = (6 + f * 10) * k;
-  CAB.lights.pl1.intensity = lerp(6, 1.2, k) * (noise1(T * 14, 4) > 0.75 ? 0.2 : 1);
-  CAB.lights.pl2.intensity = lerp(4, 0.8, k);
-  CAB.lights.hemi.intensity = lerp(1.4, 0.55, k);
-  CAB.stripM.color.setRGB(lerp(0.81, 1.0, k), lerp(0.88, 0.25, k), lerp(1.0, 0.25, k));
+  CAB.lights.red.intensity = (1.5 + f * 4.5) * k;
+  const flick = noise1(T * 14, 4) > 0.8 ? 0.25 : 1;
+  CAB.lights.pl1.intensity = lerp(2.2, 0.9, k) * flick;
+  CAB.lights.pl2.intensity = lerp(2.0, 0.6, k);
+  CAB.lights.hemi.intensity = lerp(0.55, 0.4, k);
+  CAB.stripM.color.setRGB(lerp(1.6, 2.6 * (0.5 + 0.5 * f), k), lerp(1.75, 0.15, k), lerp(2.0, 0.2, k));
 }
 function hideNear(p, r) { CAB.passengers.forEach(f => { if (f.g.position.distanceTo(p) < r) f.g.visible = false; }); }
-function doorOpen(k) { CAB.door.position.x = lerp(0, 1.0, ease(k)); CAB.doorL.intensity = 14 * ease(k); }
+function doorOpen(k) { CAB.door.position.x = lerp(0, 1.0, ease(k)); CAB.doorL.intensity = 3 * ease(k); }
 
 /* ---------- SHOTS ---------- */
 // each: [start, end, set, fn(lt, p, T) -> {ui?, post?, filter?}]
@@ -119,9 +123,9 @@ const SHOTS = [
   [2.42, 5.75, 'cab', (lt, p, T) => {
     resetCab(T); hideNear(V(HP().x, 0.36, HP().z - ROW), 0.3); hideNear(V(HP().x + 0.52, 0.36, HP().z - ROW), 0.3);
     CAB.hero.head.rotation.set(0.05, 0.25 + Math.sin(T) * 0.05, 0);
-    CAB.lights.winL.intensity = 2.5;
+    CAB.lights.winL.intensity = 0.5;
     const h = heroHead();
-    place(V(h.x + 0.55, 1.8, h.z - 1.9), V(h.x + 0.3, 1.76, h.z - 1.45), h.clone().add(V(0.15, -0.12, 0)), h.clone().add(V(0.05, -0.05, 0)), ease(p), 38);
+    place(V(h.x + 0.55, 1.8, h.z - 1.9), V(h.x + 0.3, 1.76, h.z - 1.45), h.clone().add(V(0.15, -0.12, 0)), h.clone().add(V(0.05, -0.05, 0)), ease(p), 44);
   }],
   // 2 exterior tracking with moon
   [5.75, 8.75, 'ext', (lt, p, T) => {
@@ -151,7 +155,7 @@ const SHOTS = [
     CAB.hero.mouth.scale.set(0.022 - k * 0.006, 0.008 + k * 0.014, 0.012);
     CAB.hero.head.rotation.set(0.0, 0.12 * (1 - k), 0);
     const h = heroHead();
-    place(V(h.x + 0.1, 1.74, h.z - 1.45), V(h.x + 0.05, 1.72, h.z - 1.12), h.clone().add(V(0, -0.04, 0)), null, ease(p), 34, shake(T, 0.004, 3));
+    place(V(h.x + 0.1, 1.74, h.z - 1.45), V(h.x + 0.05, 1.72, h.z - 1.12), h.clone().add(V(0, -0.04, 0)), null, ease(p), 40, shake(T, 0.004, 3));
   }],
   // 6 through the window: horizon, first lights rising
   [16.9, 21.05, 'ext', (lt, p, T) => {
@@ -184,14 +188,14 @@ const SHOTS = [
     place(V(-30, PLANE_Y - 6, -55), V(-26, PLANE_Y - 4, -48), V(0, PLANE_Y + 4, 10), null, p, 46, shake(T, 0.5, 4));
   }],
   // 10 route map U-turn
-  [28.98, 30.14, 'ui', (lt, p, T) => ({ ui: () => UI.drawRoute(ctx, clamp(lt / 1.1), T), post: { vignette: 0.5 } })],
+  [28.98, 30.14, 'ui', (lt, p, T) => ({ ui: () => UI2.drawRoute(ctx, clamp(lt / 1.1), T), post: { vignette: 0.5 } })],
   // 11 hero turns to window
   [30.14, 31.62, 'cab', (lt, p, T) => {
     resetCab(T); hideNear(V(HP().x, 0.36, HP().z - ROW), 0.3); hideNear(V(HP().x + 0.52, 0.36, HP().z - ROW), 0.3);
     CAB.hero.head.rotation.set(0, lerp(0, 1.05, easeOut((lt - 0.25) / 0.6)), 0);
-    CAB.lights.winL.intensity = 3;
+    CAB.lights.winL.intensity = 0.6;
     const h = heroHead();
-    place(V(h.x + 0.95, 1.78, h.z - 1.3), V(h.x + 0.8, 1.76, h.z - 1.1), h.clone().add(V(-0.25, -0.05, 0)), null, ease(p), 40);
+    place(V(h.x + 0.45, 1.78, h.z - 1.75), V(h.x + 0.32, 1.76, h.z - 1.45), h.clone().add(V(0.05, -0.08, 0)), null, ease(p), 42);
   }],
   // 12 window: fighter slides in next to the wing
   [31.62, 34.83, 'ext', (lt, p, T) => {
@@ -223,7 +227,7 @@ const SHOTS = [
     J.g.updateMatrixWorld(true);
     const pp = new THREE.Vector3(); J.paper.getWorldPosition(pp);
     const punch = T > 39.75 ? easeOut((T - 39.75) / 0.4) : 0;
-    place(V(-2.0, PLANE_Y + 0.8, 4.0), V(-2.0, PLANE_Y + 0.8, 4.0), pp, null, p, lerp(lerp(5.2, 4.2, p), 3.2, punch), shake(T, 0.012, 3));
+    place(V(-2.0, PLANE_Y + 0.8, 4.0), V(-2.0, PLANE_Y + 0.8, 4.0), pp, null, p, lerp(lerp(6.0, 5.2, p), 4.6, punch), shake(T, 0.012, 3));
     return { post: { vignette: 0.85 } };
   }],
   // 15 jet peels away into darkness
@@ -241,9 +245,9 @@ const SHOTS = [
     place(V(0.0, 2.25, 9.8), V(0.0, 2.2, 8.6), V(-0.3, 1.3, 0), null, ease(p), 50, shake(T, 0.01, 4));
   }],
   // 17 radar: airports closed, home airport hit
-  [46.15, 48.82, 'ui', (lt, p, T) => ({ ui: () => UI.drawRadar(ctx, clamp(lt / 2.6), T), post: { vignette: 0.5 } })],
+  [46.15, 48.82, 'ui', (lt, p, T) => ({ ui: () => UI2.drawRadar(ctx, clamp(lt / 2.6), T), post: { vignette: 0.5 } })],
   // 18 fuel 40 min
-  [48.82, 50.33, 'ui', (lt, p, T) => ({ ui: () => UI.drawFuel(ctx, clamp(lt / 1.4), T), post: { vignette: 0.5 } })],
+  [48.82, 50.33, 'ui', (lt, p, T) => ({ ui: () => UI2.drawFuel(ctx, clamp(lt / 1.4), T), post: { vignette: 0.5 } })],
   // 19 descending toward the dark sea
   [50.33, 52.3, 'ext', (lt, p, T) => {
     resetExt(T); EXT.floor.mode.value = 1;
@@ -279,7 +283,7 @@ const SHOTS = [
   // 22 cockpit: co-pilot passed out, captain alone
   [56.3, 60.3, 'ckp', (lt, p, T) => {
     const C = CKP; C.sea.t.value = T;
-    const w = Math.floor(T * 3) % 2; C.warn.forEach(m => m.visible = !!w); C.red.intensity = 4 + w * 8;
+    const w = Math.floor(T * 3) % 2; C.warn.forEach(m => m.visible = !!w); C.red.intensity = 0.5 + w * 1.3;
     C.screens.forEach((tex, i) => { drawPFD(tex.userData.ctx, 256, 256, i % 2, T); tex.needsUpdate = true; });
     C.captain.armL.rotation.set(-1.25 + Math.sin(T * 9) * 0.03, 0, 0.1); C.captain.armR.rotation.set(-1.25 + Math.sin(T * 9 + 1) * 0.03, 0, -0.1);
     C.captain.head.rotation.set(0, Math.sin(T * 0.8) * 0.15, 0);
@@ -325,13 +329,18 @@ const SHOTS = [
     R.hero.armL.rotation.set(-1.1 + Math.sin(T * 1.4) * 0.05, 0, 0.25); R.hero.armR.rotation.set(-1.1 + Math.sin(T * 1.4) * 0.05, 0, -0.25);
     R.yoke.rotation.z = Math.sin(T * 1.4) * 0.12;
     place(V(1.25, 1.95, 1.7), V(1.0, 1.85, 1.35), V(0, 1.4, -1.0), null, ease(p), 46);
-    return { filter: 'saturate(0.35) sepia(0.35) contrast(1.05) brightness(0.95)', ui: () => UI.drawSimCaption(ctx, lt / 2.2), post: { vignette: 0.9, grain: 0.12 } };
+    return { grade: { saturation: 0.3, contrast: 1.15, vignette: 0.75, grain: 0.1, tint: [1.0, 0.86, 0.66, 0.6], bloom: 0.7 }, ui: () => UI.drawSimCaption(ctx, lt / 2.2) };
   }],
   // 27 trembling hands: never touched a real plane
   [68.27, 70.42, 'cab', (lt, p, T) => {
     resetCab(T); wake(1, T); alarm(T, 0.6); hideNear(V(HP().x, 0.36, HP().z - ROW), 0.3);
     doorOpen(1);
-    place(V(-0.15, 2.0, HP().z - 0.4), V(-0.1, 1.92, HP().z - 1.9), V(0, 1.15, CAB.zFront), null, ease(p), 36, shake(T, 0.006, 2));
+    hideNear(V(HP().x, 0.36, HP().z - ROW), 0.3); hideNear(V(HP().x + 0.52, 0.36, HP().z - ROW), 0.3);
+    const hh = CAB.hero; hh.head.rotation.set(0.32 + Math.sin(T * 30) * 0.008, -0.1, 0);
+    hh.browL.rotation.z = -0.2; hh.browR.rotation.z = 0.2; hh.browL.position.y = hh.browR.position.y = 0.12;
+    const tr = Math.sin(T * 38) * 0.03; hh.armL.rotation.set(-0.95 + tr, 0, 0.15); hh.armR.rotation.set(-0.95 - tr, 0, -0.15);
+    const h = heroHead();
+    place(V(h.x + 0.55, 1.62, h.z - 1.25), V(h.x + 0.42, 1.6, h.z - 1.0), h.clone().add(V(0, -0.25, 0)), null, ease(p), 46, shake(T, 0.004, 3));
   }],
   // 28 CHOICE
   [70.42, DURATION, 'cab', (lt, p, T) => {
@@ -389,18 +398,37 @@ function renderAt(T) {
   const s = shotAt(T);
   const lt = T - s[0], p = clamp(lt / (s[1] - s[0]));
   const res = s[3](lt, p, T) || {};
-  glc.style.filter = res.filter || 'none';
-  ctx.clearRect(0, 0, W, H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, RW, RH);
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  const po = res.post || {};
   if (s[2] === 'ui') {
     renderer.setClearColor(0x000000); renderer.clear();
-  } else {
-    const scene = { ext: EXT.scene, cab: CAB.scene, ckp: CKP.scene, room: ROOM.scene }[s[2]];
-    renderer.render(scene, cam);
+    if (res.ui) res.ui();
+    UI.post(ctx, T, { vignette: po.vignette ?? 0.5, grain: 0.05, flash: po.flash || 0, red: po.red || 0 });
+    return;
   }
+  const set = { ext: EXT, cab: CAB, ckp: CKP, room: ROOM }[s[2]];
+  if (s[2] === 'ext') { cam.near = 0.3; cam.far = 20000; } else { cam.near = 0.03; cam.far = 80; }
+  cam.updateProjectionMatrix();
+  if (s[2] === 'cab') autoHide();
+  const g = { ...(res.grade || {}) };
+  if (s[2] !== 'ext' && g.dof === undefined && FOCUS < 12) g.dof = { focus: FOCUS, aperture: 0.0045, maxblur: 0.0065 };
+  if (po.vignette != null && g.vignette == null) g.vignette = po.vignette * 0.75;
+  if (po.flash) g.flash = po.flash;
+  if (po.red) g.tint = [1.0, 0.35, 0.35, clamp(po.red * 4)];
+  POST.render(set.scene, cam, T, g);
   if (res.ui) res.ui();
-  // cut-flash: tiny dip at each cut for punch
-  const cut = lt < 0.06 ? 0.0 : 0;
-  UI.post(ctx, T, { cut, ...(res.post || {}) });
+}
+// hide passengers whose heads would block the lens
+const _hp = new THREE.Vector3(), _dir = new THREE.Vector3(), _to = new THREE.Vector3();
+function autoHide() {
+  cam.updateMatrixWorld(); cam.getWorldDirection(_dir);
+  for (const f of CAB.passengers) {
+    if (!f.g.visible) continue;
+    f.head.getWorldPosition(_hp);
+    _to.subVectors(_hp, cam.position); const d = _to.length(); const along = _to.dot(_dir);
+    if (along > -0.2 && d < 0.95) f.g.visible = false;
+  }
 }
 
 async function init() {
@@ -411,6 +439,9 @@ async function init() {
   const r = rng(9);
   EXT.missiles.list.forEach((m, i) => { m.start = i === 0 ? 0 : 4.4 + i * 0.18 + r() * 0.5; });
   UI.initGrain();
+  POST = makePost(renderer, W, H);
+  for (const st of [EXT, CAB, CKP, ROOM]) { st.scene.environment = POST.envTex; }
+  EXT.scene.environmentIntensity = 0.12; CAB.scene.environmentIntensity = 0.12; CKP.scene.environmentIntensity = 0.1; ROOM.scene.environmentIntensity = 0.1;
   // warm-up compile
   for (const sc of [EXT.scene, CAB.scene, CKP.scene, ROOM.scene]) renderer.compile(sc, cam);
   window.renderAt = (T) => { renderAt(T); return true; };

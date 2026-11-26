@@ -187,10 +187,10 @@ function makeFighter() {
     ctx.font = '900 118px IK'; ctx.save(); ctx.translate(w / 2, h * 0.33); ctx.rotate(-0.03); ctx.fillText('KIYIYA', 0, 0); ctx.restore();
     ctx.font = '900 104px IK'; ctx.save(); ctx.translate(w / 2, h * 0.7); ctx.rotate(0.02); ctx.fillText('GİTMEYİN', 0, 0); ctx.restore();
   });
-  const paper = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.88), new THREE.MeshStandardMaterial({ map: paperTex, roughness: 0.9, side: THREE.DoubleSide, emissive: '#ffffff', emissiveIntensity: 0.55, emissiveMap: paperTex }));
+  const paper = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.88), new THREE.MeshStandardMaterial({ map: paperTex, roughness: 0.9, side: THREE.DoubleSide, emissive: '#ffffff', emissiveIntensity: 0.08, emissiveMap: paperTex }));
   paper.position.set(0.95, 1.05, 3.1); paper.rotation.y = Math.PI / 2; g.add(paper);
   const engineGlow = glowSprite('#ff9a4a', 3.2, 0.8); engineGlow.position.set(0, 0, -7.6); g.add(engineGlow);
-  g.userData.canopyLight = new THREE.PointLight(0x8fb0ff, 14, 9, 1.2); g.userData.canopyLight.position.set(1.4, 1.4, 3.6); g.add(g.userData.canopyLight);
+  g.userData.canopyLight = new THREE.PointLight(0x8fb0ff, 1.2, 9, 1.2); g.userData.canopyLight.position.set(1.4, 1.4, 3.6); g.add(g.userData.canopyLight);
   return { g, pilot, arm, paper, paperTex, helmet };
 }
 
@@ -237,7 +237,7 @@ export const ROW = 0.88;
 export function buildCabin() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#05070d');
-  scene.fog = new THREE.Fog(0x0a0f1e, 6, 19);
+  scene.fog = new THREE.Fog(0x060a14, 5, 17);
   const rows = 16;
   const len = rows * ROW + 6;
   const zFront = -4; // bulkhead plane
@@ -248,14 +248,14 @@ export function buildCabin() {
   const floor = box(4.4, 0.05, len, mat('#2c3f73', { roughness: 0.95 })); floor.position.set(0, 0, zFront + len / 2); scene.add(floor);
   const aisle = box(0.62, 0.052, len, mat('#24345f', { roughness: 0.95 })); aisle.position.set(0, 0.002, zFront + len / 2); scene.add(aisle);
   // floor path lights
-  for (let i = 0; i < rows + 4; i++) for (const s of [-1, 1]) { const l = box(0.04, 0.02, 0.12, emis('#fff2c8', 0.9)); l.position.set(s * 0.33, 0.04, zFront + 0.6 + i * ROW); scene.add(l); }
+  for (let i = 0; i < rows + 4; i++) for (const s of [-1, 1]) { const l = box(0.04, 0.02, 0.12, emis('#fff2c8', 2.0)); l.position.set(s * 0.33, 0.04, zFront + 0.6 + i * ROW); scene.add(l); }
   // overhead bins
   for (const s of [-1, 1]) {
     const bin = box(1.05, 0.52, len - 1, mat('#e3e6ec', { roughness: 0.6 })); bin.position.set(s * 1.45, 2.25, zFront + len / 2); bin.rotation.z = s * 0.18; scene.add(bin);
     const lip = box(0.06, 0.06, len - 1, mat('#9aa3b3')); lip.position.set(s * 0.95, 2.0, zFront + len / 2); scene.add(lip);
   }
   // ceiling light strips
-  const stripM = emis('#cfe0ff', 1.0);
+  const stripM = emis('#cfe0ff', 1.0); stripM.userData.base = 2.2;
   for (const s of [-1, 1]) { const l = box(0.06, 0.03, len - 1, stripM); l.position.set(s * 0.82, 2.63, zFront + len / 2); scene.add(l); }
   const ceil = box(1.4, 0.05, len, mat('#dfe3ea')); ceil.position.set(0, 2.78, zFront + len / 2); scene.add(ceil);
   // windows
@@ -274,16 +274,16 @@ export function buildCabin() {
   }
   // front bulkhead with cockpit door
   const bulk = box(4.4, 3.2, 0.12, mat('#d7dce4', { roughness: 0.7 })); bulk.position.set(0, 1.5, zFront); scene.add(bulk);
-  const doorHole = box(0.9, 2.05, 0.14, emis('#fff4dc', 1.6)); doorHole.position.set(0, 1.03, zFront - 0.02); scene.add(doorHole);
+  const doorHole = box(0.9, 2.05, 0.14, emis('#fff4dc', 0.95)); doorHole.position.set(0, 1.03, zFront - 0.02); scene.add(doorHole);
   const door = box(0.92, 2.07, 0.1, mat('#b9c0cc', { roughness: 0.5 })); door.position.set(0, 1.03, zFront + 0.1); scene.add(door);
   const handle = box(0.08, 0.04, 0.06, mat('#555')); handle.position.set(0.32, 1.0, 0.06); door.add(handle);
-  const exitSign = box(0.5, 0.18, 0.04, emis('#38ff8a', 1.2)); exitSign.position.set(-1.2, 2.55, zFront + 0.1); scene.add(exitSign);
+  const exitSign = box(0.5, 0.18, 0.04, emis('#38ff8a', 2.4)); exitSign.position.set(-1.2, 2.55, zFront + 0.1); scene.add(exitSign);
   // seatbelt sign panel (per row, overhead) - one detailed for close-up at hero row
   const sbTex = canvasTex(256, 128, (ctx, w, h) => drawSeatbelt(ctx, w, h, 0));
   // seats (instanced parts)
   const seatX = [-1.55, -1.03, -0.51, 0.51, 1.03, 1.55];
   const nSeats = rows * 6;
-  const fabric = mat('#2f4a8f', { roughness: 0.9 });
+  const fabric = mat('#22325a', { roughness: 0.92 });
   const cover = mat('#e9ecf2', { roughness: 0.8 });
   const baseI = new THREE.InstancedMesh(new THREE.BoxGeometry(0.48, 0.14, 0.5), fabric, nSeats);
   const backI = new THREE.InstancedMesh(new THREE.BoxGeometry(0.48, 0.86, 0.13), fabric, nSeats);
@@ -310,9 +310,9 @@ export function buildCabin() {
 
   // passengers
   const r = rng(11);
-  const tops = ['#3d4a63', '#5a3a3a', '#2f5b4f', '#6b5a3a', '#3f3f46', '#7a2f3f', '#2c3e6b', '#555d6b'];
+  const tops = ['#2f3a4f', '#4a3236', '#34453f', '#4b4536', '#3a3a40', '#5a2f38', '#2c3854', '#4c525c'];
   const hats = [null, null, 'cap', 'beanie', 'hair', 'hair', null];
-  const hatCols = ['#c0392b', '#2e86de', '#f1c40f', '#27ae60', '#e67e22', '#8e44ad', '#3a2418', '#1e1e1e'];
+  const hatCols = ['#7a2a2a', '#2b4f7a', '#8f7a45', '#3c5a3c', '#5e4530', '#4a3a5a', '#2a1d17', '#1e1e1e'];
   const HERO_ROW = 6, HERO_COL = 0, GIRL_COL = 1;
   const passengers = [];
   for (let rI = 0; rI < rows; rI++) for (let c = 0; c < 6; c++) {
@@ -323,7 +323,7 @@ export function buildCabin() {
     f.head.rotation.x = 0.2 + r() * 0.25; f.head.rotation.z = (r() - 0.5) * 0.5;
     scene.add(f.g); passengers.push(f);
   }
-  const hero = makeFigure({ top: '#2b2f38', pants: '#4b6aa6', hat: 'beanie', hatColor: '#f2c230', vest: '#ff7a1a', mask: true, brows: true, seed: 99 });
+  const hero = makeFigure({ top: '#2b2f38', pants: '#4b6aa6', hat: 'beanie', hatColor: '#e3a92b', vest: '#ff6a12', mask: true, brows: true, seed: 99 });
   const hp = seatPos(HERO_ROW, HERO_COL); hero.g.position.set(hp.x, 0.36, hp.z + 0.02); hero.g.rotation.y = Math.PI; scene.add(hero.g);
   const girl = makeFigure({ top: '#ff7eb0', pants: '#7a8bd6', pigtails: true, brows: true, seed: 5, scale: 0.72 });
   const gp = seatPos(HERO_ROW, GIRL_COL); girl.g.position.set(gp.x, 0.36 + 0.05, gp.z + 0.06); girl.g.rotation.y = Math.PI; scene.add(girl.g);
@@ -342,17 +342,21 @@ export function buildCabin() {
   panel.position.set(-1.25, 1.9, hp.z - 0.3); panel.rotation.z = -0.18; scene.add(panel);
 
   // lights
-  const hemi = new THREE.HemisphereLight(0xbfd0ff, 0x1a2340, 1.4); scene.add(hemi);
-  const key = new THREE.DirectionalLight(0xdfe8ff, 1.2); key.position.set(1, 4, 3); scene.add(key);
-  const pl1 = new THREE.PointLight(0xcfe0ff, 6, 9, 1.6); pl1.position.set(0, 2.5, hp.z); scene.add(pl1);
-  const pl2 = new THREE.PointLight(0xcfe0ff, 4, 9, 1.6); pl2.position.set(0, 2.5, hp.z - 4); scene.add(pl2);
-  const red = new THREE.PointLight(0xff2a2a, 0, 12, 1.2); red.position.set(0, 2.4, hp.z - 2); scene.add(red);
+  const hemi = new THREE.HemisphereLight(0x7d93c4, 0x0a0e18, 0.55); scene.add(hemi);
+  // cold moonlight coming through the left windows
+  const key = new THREE.DirectionalLight(0x93b2ff, 1.6); key.position.set(-6, 2.6, 1.5); key.target.position.set(0, 1, hp.z); scene.add(key, key.target);
+  const pl1 = new THREE.PointLight(0xbfd2ff, 2.2, 7, 1.6); pl1.position.set(0, 2.5, hp.z + 1); scene.add(pl1);
+  const pl2 = new THREE.PointLight(0xbfd2ff, 2.0, 8, 1.6); pl2.position.set(0, 2.5, hp.z - 4); scene.add(pl2);
+  const red = new THREE.PointLight(0xff2433, 0, 9, 1.4); red.position.set(0.6, 2.3, hp.z - 1.5); scene.add(red);
+  // warm reading light above the hero
+  const read = new THREE.SpotLight(0xffc98f, 2.2, 5, 0.5, 0.8, 1.2); read.position.set(hp.x + 0.35, 2.45, hp.z - 0.6);
+  read.target.position.set(hp.x, 1.3, hp.z - 0.1); scene.add(read, read.target);
   const doorL = new THREE.PointLight(0xfff1d6, 0, 10, 1.4); doorL.position.set(0, 1.3, zFront + 0.6); scene.add(doorL);
   const winL = new THREE.PointLight(0x9fb8ff, 0, 3, 1.5); winL.position.set(-1.8, 1.4, hp.z); scene.add(winL);
 
   return {
     scene, hero, girl, steward, passengers, door, doorHole, doorL, panel, sbTex, windows, winTex,
-    lights: { hemi, key, pl1, pl2, red, winL }, stripM, zFront, heroPos: hp, girlPos: gp, seatPos,
+    lights: { hemi, key, pl1, pl2, red, winL, read }, stripM, zFront, heroPos: hp, girlPos: gp, seatPos,
     exitSign,
   };
 }
@@ -443,8 +447,8 @@ export function buildCockpit() {
 
   const hemi = new THREE.HemisphereLight(0x8aa0d0, 0x101318, 0.8); scene.add(hemi);
   const red = new THREE.PointLight(0xff2a2a, 6, 6, 1.2); red.position.set(0, 1.9, -0.6); scene.add(red);
-  const scr = new THREE.PointLight(0x7fd0ff, 3, 4, 1.4); scr.position.set(0, 1.3, -1.0); scene.add(scr);
-  const back = new THREE.PointLight(0xfff0d0, 4, 6, 1.4); back.position.set(0, 1.8, 2.2); scene.add(back);
+  const scr = new THREE.PointLight(0x7fd0ff, 2.2, 4, 1.4); scr.position.set(0, 1.3, -1.0); scene.add(scr);
+  const back = new THREE.PointLight(0xfff0d0, 1.6, 6, 1.4); back.position.set(0, 1.8, 2.2); scene.add(back);
   return { scene, captain, copilot, screens, warn, red, sea: seaU, yoke };
 }
 
@@ -486,7 +490,7 @@ export function buildRoom() {
   for (const s of [-1, 1]) { const h = box(0.06, 0.18, 0.06, mat('#222')); h.position.set(s * 0.25, 0.08, 0); yoke.add(h); }
   yoke.position.set(0, 1.12, -0.6); scene.add(yoke);
   const chair = box(0.7, 1.1, 0.15, mat('#b3241f', { roughness: 0.6 })); chair.position.set(0, 1.0, 0.55); scene.add(chair);
-  const hero = makeFigure({ top: '#2b2f38', pants: '#4b6aa6', hat: 'beanie', hatColor: '#f2c230', vest: null, seed: 99, brows: true });
+  const hero = makeFigure({ top: '#2b2f38', pants: '#4b6aa6', hat: 'beanie', hatColor: '#e3a92b', vest: null, seed: 99, brows: true });
   hero.g.position.set(0, 0.45, 0.2); hero.g.rotation.y = Math.PI; scene.add(hero.g);
   hero.armL.rotation.set(-1.1, 0, 0.25); hero.armR.rotation.set(-1.1, 0, -0.25);
   const seat = box(0.7, 0.12, 0.6, mat('#b3241f')); seat.position.set(0, 0.45, 0.25); scene.add(seat);

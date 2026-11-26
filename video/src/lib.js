@@ -85,7 +85,9 @@ export function glowSprite(color = '#ffffff', size = 1, opacity = 1) {
 }
 
 /* ---------------- Toy figure ---------------- */
-const SKIN = '#ecebe7';
+const SKIN = '#e9e7e2';
+const vinylCache = new Map();
+export function vinyl(color) { if (!vinylCache.has(color)) vinylCache.set(color, new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, clearcoat: 0.6, clearcoatRoughness: 0.35, sheen: 0 })); return vinylCache.get(color); }
 export function makeFigure(o = {}) {
   const {
     top = '#3d4a63', pants = '#4b6aa6', hat = null, hatColor = '#c0392b', eyes = 'open',
@@ -94,7 +96,7 @@ export function makeFigure(o = {}) {
   const r = rng(seed);
   const g = new THREE.Group();
   const body = new THREE.Group(); g.add(body);
-  const topM = mat(top), pantsM = mat(pants), skinM = mat(SKIN, { roughness: 0.45 });
+  const topM = mat(top, { roughness: 0.78 }), pantsM = mat(pants, { roughness: 0.8 }), skinM = vinyl(SKIN);
   const blackM = mat('#0c0d10', { roughness: 0.3 });
 
   // pelvis / torso
@@ -151,9 +153,8 @@ export function makeFigure(o = {}) {
   // hats
   if (hat === 'beanie') {
     const hm = mat(hatColor, { roughness: 0.85 });
-    const cap = new THREE.Mesh(G.halfSphere, hm); cap.scale.set(0.285, 0.27, 0.275); cap.position.y = 0.05; head.add(cap);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.272, 0.05, 10, 32), hm); rim.rotation.x = Math.PI / 2; rim.position.y = 0.07; rim.scale.set(1, 0.96, 1); head.add(rim);
-    const pom = sph(0.07, hm); pom.position.y = 0.33; head.add(pom);
+    const cap = new THREE.Mesh(G.halfSphere, hm); cap.scale.set(0.279, 0.23, 0.27); cap.position.y = 0.1; cap.rotation.x = -0.12; head.add(cap);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.262, 0.036, 10, 32), hm); rim.rotation.x = Math.PI / 2 - 0.12; rim.position.set(0, 0.115, -0.005); head.add(rim);
   } else if (hat === 'cap') {
     const hm = mat(hatColor, { roughness: 0.7 });
     const cap = new THREE.Mesh(G.halfSphere, hm); cap.scale.set(0.28, 0.2, 0.275); cap.position.y = 0.08; head.add(cap);

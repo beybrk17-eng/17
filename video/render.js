@@ -25,7 +25,7 @@ function serve() {
   const srv = await serve();
   const url = `http://127.0.0.1:${srv.address().port}/index.html`;
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const page = await browser.newPage({ viewport: { width: 720, height: 1280 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.error('[page]', m.text()); });
   page.on('pageerror', (e) => console.error('[pageerror]', e.message));
   await page.goto(url);
