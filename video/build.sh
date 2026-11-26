@@ -14,5 +14,5 @@ ffmpeg -v error -y -framerate 30 -i out/frames/f%05d.jpg -i "$VO" -i out/sfx.wav
 [vo]asplit=2[vo1][vo2];\
 [fx][vo2]sidechaincompress=threshold=0.04:ratio=5:attack=20:release=350[fxd];\
 [vo1][fxd]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[a]" \
-  -map "[v]" -map "[a]" -c:v libx264 -preset slow -crf 19 -profile:v high -r 30 -c:a aac -b:a 192k -movflags +faststart -t 93 "$OUTF"
+  -map "[v]" -map "[a]" -c:v libx264 -preset slow -crf 23 -profile:v high -r 30 -c:a aac -b:a 192k -movflags +faststart -t 93 "$OUTF"
 echo "built $OUTF"
